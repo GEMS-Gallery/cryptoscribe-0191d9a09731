@@ -1,12 +1,586 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crypto Blog</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 24px;
+            padding: 20px;
+        }
+        .card-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        .input-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #555;
+        }
+        .reading {
+            border-bottom: 1px solid #f0f0f0;
+            padding: 12px 0;
+        }
+        .reading:last-child {
+            border-bottom: none;
+        }
+        .reading-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .reading-status {
+            font-size: 14px;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+        }
+        .footer {
+            text-align: center;
+            font-size: 14px;
+            color: #777;
+            margin-top: 24px;
+        }
+        .icon {
+            width: 32px;
+            height: 32px;
+            margin-right: 12px;
+        }
+        .icon-small {
+            width: 16px;
+            height: 16px;
+            margin-right: 4px;
+        }
+        .icon-bp {
+            color: #e11d48;
+        }
+        .icon-weight {
+            color: #047857;
+        }
+        .icon-heart-rate {
+            color: #7c3aed;
+        }
+        .tab-container {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            flex-grow: 1;
+            text-align: center;
+        }
+        .tab.active {
+            border-bottom-color: #333;
+        }
+        .weight-change {
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .positive-change {
+            color: #16a34a;
+        }
+        .negative-change {
+            color: #dc2626;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .time-range-selector {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .time-range-selector button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .time-range-selector button.active {
+            background-color: #333;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tab-container">
+            <div class="tab active" onclick="showTab('bloodPressure')">Blood Pressure</div>
+            <div class="tab" onclick="showTab('weight')">Weight</div>
+            <div class="tab" onclick="showTab('heartRate')">Heart Rate</div>
+        </div>
+        <div id="bloodPressureTab">
+            <div class="card">
+                <h2 class="card-title">
+                    <svg class="icon icon-bp" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                    </svg>
+                    Blood Pressure Tracker
+                </h2>
+                <div class="input-group">
+                    <input type="number" id="systolic" placeholder="Systolic">
+                    <input type="number" id="diastolic" placeholder="Diastolic">
+                </div>
+                <button id="addBPReading">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Add Reading
+                </button>
+            </div>
+            <div class="card">
+                <h3 class="card-title">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    Recent BP Readings
+                </h3>
+                <div id="bpReadings"></div>
+            </div>
+            <div class="chart-container">
+                <canvas id="bpChart"></canvas>
+            </div>
+            <div class="time-range-selector">
+                <button onclick="updateChartTimeRange('bp', 'daily')" class="active">Daily</button>
+                <button onclick="updateChartTimeRange('bp', 'weekly')">Weekly</button>
+                <button onclick="updateChartTimeRange('bp', 'monthly')">Monthly</button>
+                <button onclick="updateChartTimeRange('bp', 'yearly')">Yearly</button>
+            </div>
+        </div>
+        <div id="weightTab" style="display: none;">
+            <div class="card">
+                <h2 class="card-title">
+                    <svg class="icon icon-weight" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    Weight Tracker
+                </h2>
+                <div class="input-group">
+                    <input type="number" id="weight" placeholder="Weight (kg)">
+                </div>
+                <button id="addWeightReading">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Add Weight
+                </button>
+            </div>
+            <div class="card">
+                <h3 class="card-title">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    Recent Weight Readings
+                </h3>
+                <div id="weightReadings"></div>
+            </div>
+            <div class="chart-container">
+                <canvas id="weightChart"></canvas>
+            </div>
+            <div class="time-range-selector">
+                <button onclick="updateChartTimeRange('weight', 'daily')" class="active">Daily</button>
+                <button onclick="updateChartTimeRange('weight', 'weekly')">Weekly</button>
+                <button onclick="updateChartTimeRange('weight', 'monthly')">Monthly</button>
+                <button onclick="updateChartTimeRange('weight', 'yearly')">Yearly</button>
+            </div>
+        </div>
+        <div id="heartRateTab" style="display: none;">
+            <div class="card">
+                <h2 class="card-title">
+                    <svg class="icon icon-heart-rate" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
+                    Heart Rate Tracker
+                </h2>
+                <div class="input-group">
+                    <input type="number" id="heartRate" placeholder="Heart Rate (bpm)">
+                </div>
+                <button id="addHeartRateReading">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Add Heart Rate
+                </button>
+            </div>
+            <div class="card">
+                <h3 class="card-title">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    Recent Heart Rate Readings
+                </h3>
+                <div id="heartRateReadings"></div>
+            </div>
+            <div class="chart-container">
+                <canvas id="heartRateChart"></canvas>
+            </div>
+            <div class="time-range-selector">
+                <button onclick="updateChartTimeRange('heartRate', 'daily')" class="active">Daily</button>
+                <button onclick="updateChartTimeRange('heartRate', 'weekly')">Weekly</button>
+                <button onclick="updateChartTimeRange('heartRate', 'monthly')">Monthly</button>
+                <button onclick="updateChartTimeRange('heartRate', 'yearly')">Yearly</button>
+            </div>
+        </div>
+        <div class="footer">
+            Track your health metrics regularly for better insights
+        </div>
+    </div>
+
+    <script>
+        let bpReadings = [];
+        let weightReadings = [];
+        let heartRateReadings = [];
+        let bpChart, weightChart, heartRateChart;
+
+        function showTab(tabName) {
+            document.getElementById('bloodPressureTab').style.display = tabName === 'bloodPressure' ? 'block' : 'none';
+            document.getElementById('weightTab').style.display = tabName === 'weight' ? 'block' : 'none';
+            document.getElementById('heartRateTab').style.display = tabName === 'heartRate' ? 'block' : 'none';
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function initCharts() {
+            const bpCtx = document.getElementById('bpChart').getContext('2d');
+            bpChart = new Chart(bpCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Systolic',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        tension: 0.1
+                    }, {
+                        label: 'Diastolic',
+                        data: [],
+                        borderColor: 'rgb(54, 162, 235)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            const weightCtx = document.getElementById('weightChart').getContext('2d');
+            weightChart = new Chart(weightCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Weight',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+
+            const heartRateCtx = document.getElementById('heartRateChart').getContext('2d');
+            heartRateChart = new Chart(heartRateCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Heart Rate',
+                        data: [],
+                        borderColor: 'rgb(153, 102, 255)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function addBPReading() {
+            const systolic = document.getElementById('systolic').value;
+            const diastolic = document.getElementById('diastolic').value;
+
+            if (systolic && diastolic) {
+                const newReading = {
+                    systolic,
+                    diastolic,
+                    date: new Date().toLocaleString()
+                };
+                bpReadings.unshift(newReading);
+                updateBPReadings();
+                updateBPChart();
+                document.getElementById('systolic').value = '';
+                document.getElementById('diastolic').value = '';
+            }
+        }
+
+        function getBPStatus(sys, dia) {
+            sys = parseInt(sys);
+            dia = parseInt(dia);
+            if (sys < 120 && dia < 80) return 'Normal';
+            if (sys < 130 && dia < 80) return 'Elevated';
+            if (sys < 140 || dia < 90) return 'High (Stage 1)';
+            return 'High (Stage 2)';
+        }
+
+        function updateBPReadings() {
+            const container = document.getElementById('bpReadings');
+            container.innerHTML = bpReadings.map(reading => `
+                <div class="reading">
+                    <div class="reading-header">
+                        <span><strong>${reading.systolic}/${reading.diastolic} mmHg</strong></span>
+                        <span style="color: #777; font-size: 14px;">${reading.date}</span>
+                    </div>
+                    <div class="reading-status">
+                        <svg class="icon-small" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        ${getBPStatus(reading.systolic, reading.diastolic)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addWeightReading() {
+            const weight = document.getElementById('weight').value;
+
+            if (weight) {
+                const newReading = {
+                    weight: parseFloat(weight),
+                    date: new Date().toLocaleString()
+                };
+                weightReadings.unshift(newReading);
+                updateWeightReadings();
+                updateWeightChart();
+                document.getElementById('weight').value = '';
+            }
+        }
+
+        function updateWeightReadings() {
+            const container = document.getElementById('weightReadings');
+            container.innerHTML = weightReadings.map((reading, index) => {
+                let changeHTML = '';
+                if (index < weightReadings.length - 1) {
+                    const change = reading.weight - weightReadings[index + 1].weight;
+                    const changeClass = change > 0 ? 'positive-change' : 'negative-change';
+                    changeHTML = `<div class="weight-change ${changeClass}">${change > 0 ? '+' : ''}${change.toFixed(1)} kg</div>`;
+                }
+                return `
+                    <div class="reading">
+                        <div class="reading-header">
+                            <span><strong>${reading.weight.toFixed(1)} kg</strong></span>
+                            <span style="color: #777; font-size: 14px;">${reading.date}</span>
+                        </div>
+                        ${changeHTML}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function addHeartRateReading() {
+            const heartRate = document.getElementById('heartRate').value;
+
+            if (heartRate) {
+                const newReading = {
+                    heartRate: parseInt(heartRate),
+                    date: new Date().toLocaleString()
+                };
+                heartRateReadings.unshift(newReading);
+                updateHeartRateReadings();
+                updateHeartRateChart();
+                document.getElementById('heartRate').value = '';
+            }
+        }
+
+        function updateHeartRateReadings() {
+            const container = document.getElementById('heartRateReadings');
+            container.innerHTML = heartRateReadings.map(reading => `
+                <div class="reading">
+                    <div class="reading-header">
+                        <span><strong>${reading.heartRate} bpm</strong></span>
+                        <span style="color: #777; font-size: 14px;">${reading.date}</span>
+                    </div>
+                    <div class="reading-status">
+                        ${getHeartRateStatus(reading.heartRate)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getHeartRateStatus(rate) {
+            if (rate < 60) return 'Low';
+            if (rate <= 100) return 'Normal';
+            return 'High';
+        }
+
+        function updateBPChart() {
+            const labels = bpReadings.map(reading => new Date(reading.date).toLocaleDateString());
+            const systolicData = bpReadings.map(reading => reading.systolic);
+            const diastolicData = bpReadings.map(reading => reading.diastolic);
+
+            bpChart.data.labels = labels.reverse();
+            bpChart.data.datasets[0].data = systolicData.reverse();
+            bpChart.data.datasets[1].data = diastolicData.reverse();
+            bpChart.update();
+        }
+
+        function updateWeightChart() {
+            const labels = weightReadings.map(reading => new Date(reading.date).toLocaleDateString());
+            const weightData = weightReadings.map(reading => reading.weight);
+
+            weightChart.data.labels = labels.reverse();
+            weightChart.data.datasets[0].data = weightData.reverse();
+            weightChart.update();
+        }
+
+        function updateHeartRateChart() {
+            const labels = heartRateReadings.map(reading => new Date(reading.date).toLocaleDateString());
+            const heartRateData = heartRateReadings.map(reading => reading.heartRate);
+
+            heartRateChart.data.labels = labels.reverse();
+            heartRateChart.data.datasets[0].data = heartRateData.reverse();
+            heartRateChart.update();
+        }
+
+        function updateChartTimeRange(chartType, timeRange) {
+            // Update active button
+            const buttons = document.querySelectorAll(`#${chartType}Tab .time-range-selector button`);
+            buttons.forEach(button => button.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Filter data based on time range
+            let filteredData;
+            const currentDate = new Date();
+            switch (timeRange) {
+                case 'daily':
+                    filteredData = getLastNDays(chartType, 7);
+                    break;
+                case 'weekly':
+                    filteredData = getLastNDays(chartType, 28);
+                    break;
+                case 'monthly':
+                    filteredData = getLastNDays(chartType, 90);
+                    break;
+                case 'yearly':
+                    filteredData = getLastNDays(chartType, 365);
+                    break;
+            }
+
+            // Update chart with filtered data
+            updateChartData(chartType, filteredData);
+        }
+
+        function getLastNDays(chartType, n) {
+            const currentDate = new Date();
+            const nDaysAgo = new Date(currentDate.getTime() - (n * 24 * 60 * 60 * 1000));
+            let data;
+            switch (chartType) {
+                case 'bp':
+                    data = bpReadings.filter(reading => new Date(reading.date) >= nDaysAgo);
+                    break;
+                case 'weight':
+                    data = weightReadings.filter(reading => new Date(reading.date) >= nDaysAgo);
+                    break;
+                case 'heartRate':
+                    data = heartRateReadings.filter(reading => new Date(reading.date) >= nDaysAgo);
+                    break;
+            }
+            return data;
+        }
+
+        function updateChartData(chartType, data) {
+            let chart;
+            switch (chartType) {
+                case 'bp':
+                    chart = bpChart;
+                    chart.data.labels = data.map(reading => new Date(reading.date).toLocaleDateString());
+                    chart.data.datasets[0].data = data.map(reading => reading.systolic);
+                    chart.data.datasets[1].data = data.map(reading => reading.diastolic);
+                    break;
+                case 'weight':
+                    chart = weightChart;
+                    chart.data.labels = data.map(reading => new Date(reading.date).toLocaleDateString());
+                    chart.data.datasets[0].data = data.map(reading => reading.weight);
+                    break;
+                case 'heartRate':
+                    chart = heartRateChart;
+                    chart.data.labels = data.map(reading => new Date(reading.date).toLocaleDateString());
+                    chart.data.datasets[0].data = data.map(reading => reading.heartRate);
+                    break;
+            }
+            chart.update();
+        }
+
+        // Initialize charts when the page loads
+        window.onload = function() {
+            initCharts();
+        };
+
+        // Add event listeners
+        document.getElementById('addBPReading').addEventListener('click', addBPReading);
+        document.getElementById('addWeightReading').addEventListener('click', addWeightReading);
+        document.getElementById('addHeartRateReading').addEventListener('click', addHeartRateReading);
+    </script>
+</body>
 </html>
